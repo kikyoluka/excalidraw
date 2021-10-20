@@ -8,8 +8,8 @@ import { CanvasError } from "../errors";
 import { t } from "../i18n";
 import { useIsMobile } from "./App";
 import { getSelectedElements, isSomeElementSelected } from "../scene";
-import { exportToCanvas } from "../scene/export";
-import { AppState } from "../types";
+import { exportToCanvas, exportToSvg } from "../scene/export";
+import { AppState, BinaryFiles } from "../types";
 import { Dialog } from "./Dialog";
 import { clipboard, exportImage } from "./icons";
 import Stack from "./Stack";
@@ -48,6 +48,29 @@ const renderPreview = (
   }
 };
 
+const renderSVGPreview = (
+  elements: readonly NonDeletedExcalidrawElement[],
+  appState: AppState,
+  files: BinaryFiles,
+  node: HTMLDivElement,
+) => {
+  (async () => {
+    const elementsToRender = elements;
+    if (!elementsToRender) {
+      return;
+    }
+    const svg = await exportToSvg(
+      elementsToRender,
+      {
+        exportBackground: false,
+        viewBackgroundColor: "#fff",
+      },
+      files,
+    );
+    node.innerHTML = svg.outerHTML;
+  })();
+};
+
 export type ExportCB = (
   elements: readonly NonDeletedExcalidrawElement[],
   scale?: number,
@@ -79,6 +102,7 @@ const ExportButton: React.FC<{
 const ImageExportModal = ({
   elements,
   appState,
+  files,
   exportPadding = DEFAULT_EXPORT_PADDING,
   actionManager,
   onExportToPng,
@@ -87,6 +111,7 @@ const ImageExportModal = ({
 }: {
   appState: AppState;
   elements: readonly NonDeletedExcalidrawElement[];
+  files: BinaryFiles;
   exportPadding?: number;
   actionManager: ActionsManagerInterface;
   onExportToPng: ExportCB;
@@ -112,7 +137,8 @@ const ImageExportModal = ({
     if (!previewNode) {
       return;
     }
-    exportToCanvas(exportedElements, appState, {
+    renderSVGPreview(exportedElements, appState, files, previewNode);
+    exportToCanvas(exportedElements, appState, files, {
       exportBackground,
       viewBackgroundColor,
       exportPadding,
@@ -130,6 +156,7 @@ const ImageExportModal = ({
       });
   }, [
     appState,
+    files,
     exportedElements,
     exportBackground,
     exportPadding,
@@ -215,6 +242,7 @@ const ImageExportModal = ({
 export const ImageExportDialog = ({
   elements,
   appState,
+  files,
   exportPadding = DEFAULT_EXPORT_PADDING,
   actionManager,
   onExportToPng,
@@ -223,6 +251,7 @@ export const ImageExportDialog = ({
 }: {
   appState: AppState;
   elements: readonly NonDeletedExcalidrawElement[];
+  files: BinaryFiles;
   exportPadding?: number;
   actionManager: ActionsManagerInterface;
   onExportToPng: ExportCB;
@@ -253,6 +282,7 @@ export const ImageExportDialog = ({
           <ImageExportModal
             elements={elements}
             appState={appState}
+            files={files}
             exportPadding={exportPadding}
             actionManager={actionManager}
             onExportToPng={onExportToPng}
